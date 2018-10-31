@@ -11,7 +11,7 @@ from tensorflow.contrib.learn import learn_runner
 
 # Misc parameters
 MODEL_NAME = 'auto-encoder-01'
-TRAIN_DATA_FILE = '/home/ajay/code/external/tf-estimator-tutorials/05_Autoencoding/data/data-01.csv'
+TRAIN_DATA_FILE = 'data/data-01.csv'
 
 RESUME_TRAINING = False
 MULTI_THREADING = True
