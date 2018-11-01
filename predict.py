@@ -8,6 +8,9 @@ from utils import standard_scaler, maxmin_scaler
 from data_prep import FdDataPrep
 from fd_model import FdModel
 
+BATCH_SIZE = 100
+MODEL_NAME = 'auto-encoder-02'
+model_dir = 'trained_models/{}'.format(MODEL_NAME)
 PREDICT_DATA_FILE = 'data/data-01.csv'
 DATA_SIZE = 2000
 
@@ -20,6 +23,21 @@ input_fn = lambda: fd_data_prep.csv_input_fn(
   mode=tf.contrib.learn.ModeKeys.INFER,
   num_epochs=1,
   batch_size=500
+)
+
+# hyper-params
+hparams  = tf.contrib.training.HParams(
+  batch_size = BATCH_SIZE,
+  encoder_hidden_units=[30,3],
+  l2_reg = 0.0001,
+  noise_level = 0.0,
+  dropout_rate = 0.05
+)
+
+# Run config for training
+run_config = tf.estimator.RunConfig(
+  tf_random_seed=19830610,
+  model_dir=model_dir
 )
 
 estimator = fd_model.create_estimator(run_config, hparams)
