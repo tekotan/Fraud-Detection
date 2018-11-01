@@ -260,7 +260,7 @@ def generate_experiment_fn(**experiment_args):
   return _experiment_fn
 
 TRAIN_SIZE = 2000
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 10
 BATCH_SIZE = 100
 NUM_EVAL = 10
 CHECKPOINT_STEPS = int((TRAIN_SIZE/BATCH_SIZE) * (NUM_EPOCHS/NUM_EVAL))
