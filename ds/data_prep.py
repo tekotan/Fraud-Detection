@@ -92,7 +92,6 @@ class FdDataPrep(object):
     """
 
     feature_columns = {}
-    
 
   #   feature_columns = {feature_name: tf.feature_column.numeric_column(feature_name)
   #            for feature_name in self.FEATURE_NAMES}
@@ -104,7 +103,8 @@ class FdDataPrep(object):
       normalizer_fn = lambda x: maxmin_scaler(x, feature_max, feature_min)
       
       feature_columns[feature_name] = tf.feature_column.numeric_column(feature_name, 
-                                       normalizer_fn=normalizer_fn
+                                       # Disable normalizer
+                                       # normalizer_fn=normalizer_fn
                                       )
    
 
