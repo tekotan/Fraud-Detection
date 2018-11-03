@@ -20,7 +20,7 @@ print(tf.__version__)
 #################################################
 RESUME_TRAINING = False
 
-TRAIN_DATA_FILE = 'data/data-01.csv'
+TRAIN_DATA_FILE = '../de/data/data-01.csv'
 TRAIN_SIZE = 2000
 NUM_EPOCHS = 1000
 BATCH_SIZE = 100
@@ -47,7 +47,7 @@ CHECKPOINT_STEPS = int((TRAIN_SIZE/BATCH_SIZE) * (NUM_EPOCHS/NUM_EVAL))
 hparams  = tf.contrib.training.HParams(
   num_epochs = NUM_EPOCHS,
   batch_size = BATCH_SIZE,
-  encoder_hidden_units=[30],
+  encoder_hidden_units=[30,3],
   learning_rate = 0.01,
   l2_reg = 0.0001,
   noise_level = 0.0,

@@ -11,7 +11,7 @@ from fd_model import FdModel
 BATCH_SIZE = 100
 MODEL_NAME = 'auto-encoder-02'
 model_dir = 'trained_models/{}'.format(MODEL_NAME)
-PREDICT_DATA_FILE = 'data/data-01.csv'
+PREDICT_DATA_FILE = '../de/data/data-01.csv'
 DATA_SIZE = 2000
 
 # Create data prep and model objects
