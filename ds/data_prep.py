@@ -17,7 +17,7 @@ class FdDataPrep(object):
     self.HEADER = ['key']
     self.HEADER_DEFAULTS = [[0]]
     self.UNUSED_FEATURE_NAMES = ['key']
-    self.CLASS_FEATURE_NAME = 'CLASS'
+    self.LABEL_FEATURE_NAME = 'LABEL'
     self.FEATURE_NAMES = []  
 
     for i in range(FEATURE_COUNT):
@@ -25,12 +25,12 @@ class FdDataPrep(object):
       self.FEATURE_NAMES += ['x_{}'.format(str(i+1))]
       self.HEADER_DEFAULTS += [[0.0]]
 
-    self.HEADER += [self.CLASS_FEATURE_NAME]
+    self.HEADER += [self.LABEL_FEATURE_NAME]
     self.HEADER_DEFAULTS += [['NA']]
 
     print("self.Header: {}".format(self.HEADER))
     print("Features: {}".format(self.FEATURE_NAMES))
-    print("Class Feature: {}".format(self.CLASS_FEATURE_NAME))
+    print("Label Feature: {}".format(self.LABEL_FEATURE_NAME))
     print("Unused Features: {}".format(self.UNUSED_FEATURE_NAMES))
 
   def parse_csv_row(self, csv_row):
@@ -41,7 +41,7 @@ class FdDataPrep(object):
     for column in self.UNUSED_FEATURE_NAMES:
       features.pop(column)
 
-    target = features.pop(self.CLASS_FEATURE_NAME)
+    target = features.pop(self.LABEL_FEATURE_NAME)
 
     return features, target
 

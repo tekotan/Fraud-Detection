@@ -11,7 +11,8 @@ from tensorflow.contrib.learn import learn_runner
 
 # Misc parameters
 MODEL_NAME = 'auto-encoder-01'
-TRAIN_DATA_FILE = 'data/data-01.csv'
+#TRAIN_DATA_FILE = '../de/data/data-01.csv'
+TRAIN_DATA_FILE = '../de/data/closedtickets1.csv'
 
 RESUME_TRAINING = False
 MULTI_THREADING = True
@@ -22,7 +23,7 @@ FEATURE_COUNT = 64
 HEADER = ['key']
 HEADER_DEFAULTS = [[0]]
 UNUSED_FEATURE_NAMES = ['key']
-CLASS_FEATURE_NAME = 'CLASS'
+LABEL_FEATURE_NAME = 'LABEL'
 FEATURE_NAMES = []  
 
 for i in range(FEATURE_COUNT):
@@ -30,12 +31,12 @@ for i in range(FEATURE_COUNT):
   FEATURE_NAMES += ['x_{}'.format(str(i+1))]
   HEADER_DEFAULTS += [[0.0]]
 
-HEADER += [CLASS_FEATURE_NAME]
+HEADER += [LABEL_FEATURE_NAME]
 HEADER_DEFAULTS += [['NA']]
 
 print("Header: {}".format(HEADER))
 print("Features: {}".format(FEATURE_NAMES))
-print("Class Feature: {}".format(CLASS_FEATURE_NAME))
+print("Class Feature: {}".format(LABEL_FEATURE_NAME))
 print("Unused Features: {}".format(UNUSED_FEATURE_NAMES))
 
 
@@ -47,7 +48,7 @@ def parse_csv_row(csv_row):
   for column in UNUSED_FEATURE_NAMES:
     features.pop(column)
 
-  target = features.pop(CLASS_FEATURE_NAME)
+  target = features.pop(LABEL_FEATURE_NAME)
 
   return features, target
 
