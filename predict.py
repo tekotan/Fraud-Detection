@@ -43,8 +43,22 @@ run_config = tf.estimator.RunConfig(
 estimator = fd_model.create_estimator(run_config, hparams)
 
 predictions = estimator.predict(input_fn=input_fn)
-predictions = itertools.islice(predictions, DATA_SIZE)
-predictions = list(map(lambda item: list(item["encoding"]), predictions))
+#predictions = itertools.islice(predictions, DATA_SIZE)
+#predictions = list(map((lambda item: list(item["encoding"])), predictions))
+temp = predictions
+predictions = lambda item: list(item["encoding"])
+print("Lambda \n")
+print (type(predictions))
+print (predictions)
+predictions = map(predictions, temp)
+print("Map \n")
+print (type(predictions))
+print (predictions)
+predictions = list(predictions)
+print("List \n")
+print (type(predictions))
+print (predictions)
+#predictions = list(map((lambda item: list(item["encoding"])), predictions))
 
 print(predictions[:5])
 
@@ -62,5 +76,3 @@ fig = plt.figure(figsize=(15,10))
 ax = fig.add_subplot(111, projection='3d')
 ax.scatter(xs=data_reduced.c2/1000000, ys=data_reduced.c3/1000000, zs=data_reduced.c1/1000000, c=data_reduced['class'], marker='o')
 plt.show()
-
-
