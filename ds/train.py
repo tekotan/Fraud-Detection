@@ -20,7 +20,7 @@ print(tf.__version__)
 #################################################
 RESUME_TRAINING = False
 
-TRAIN_DATA_FILE = 'data/data-01.csv'
+TRAIN_DATA_FILE = '../de/data/data-01.csv'
 TRAIN_SIZE = 2000
 NUM_EPOCHS = 1000
 BATCH_SIZE = 100
@@ -34,7 +34,7 @@ model_dir = 'trained_models/{}'.format(MODEL_NAME)
 fd_data_prep = FdDataPrep()
 fd_model = FdModel()
 
-features, target = fd_data_prep.csv_input_fn(files_name_pattern="")
+features, target = fd_data_prep.csv_input_fn(files_name_pattern="data-*.csv")
 print("Feature read from CSV: {}".format(list(features.keys())))
 print("Target read from CSV: {}".format(target))
 
@@ -62,7 +62,7 @@ run_config = tf.estimator.RunConfig(
   model_dir=model_dir
 )
 
-# Print to verify 
+# Print to verify
 print(hparams)
 print("Model Directory:", run_config.model_dir)
 print("")
@@ -70,11 +70,11 @@ print("Dataset Size:", TRAIN_SIZE)
 print("Batch Size:", BATCH_SIZE)
 print("Steps per Epoch:", TRAIN_SIZE/BATCH_SIZE)
 print("Total Steps:", TOTAL_STEPS)
-print("Required Evaluation Steps:", NUM_EVAL) 
+print("Required Evaluation Steps:", NUM_EVAL)
 print("That is 1 evaluation step after each", NUM_EPOCHS/NUM_EVAL, " epochs")
 print("Save Checkpoint After", CHECKPOINT_STEPS, "steps")
 
-# Create train and eval specs 
+# Create train and eval specs
 train_spec = tf.estimator.TrainSpec(
   input_fn = lambda: fd_data_prep.csv_input_fn(
     TRAIN_DATA_FILE,
@@ -107,14 +107,14 @@ if not RESUME_TRAINING:
   print("Removing previous artifacts...")
   shutil.rmtree(model_dir, ignore_errors=True)
 else:
-  print("Resuming training...") 
+  print("Resuming training...")
 
 # set logging
 tf.logging.set_verbosity(tf.logging.INFO)
 
-time_start = datetime.utcnow() 
+time_start = datetime.utcnow()
 print("Experiment started at {}".format(time_start.strftime("%H:%M:%S")))
-print(".......................................") 
+print(".......................................")
 
 # Create estimator
 estimator = fd_model.create_estimator(run_config, hparams)
@@ -122,11 +122,11 @@ estimator = fd_model.create_estimator(run_config, hparams)
 # Train model
 tf.estimator.train_and_evaluate(
   estimator=estimator,
-  train_spec=train_spec, 
+  train_spec=train_spec,
   eval_spec=eval_spec
 )
 
-time_end = datetime.utcnow() 
+time_end = datetime.utcnow()
 print(".......................................")
 print("Experiment finished at {}".format(time_end.strftime("%H:%M:%S")))
 print("")
