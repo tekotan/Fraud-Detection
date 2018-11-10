@@ -1,0 +1,10 @@
+locat
+ticketnum
+dtout
+paycode
+make 
+color 
+plate
+ccdaccount 
+ccdexpdate 
+ratedescription
