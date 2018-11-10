@@ -28,18 +28,14 @@ def dump_each_column(trans_df, outdir, header, output_fname='dataset.csv'):
     header_list = header
     trans_df.to_csv(fname, columns=header_list)
 
-def select_columns(trans_fname, features_fname, output_dir):
+def select_columns(trans_fname, features_fname, output_dir, output_fname):
     """ Function selects columns
     """
-    import ipdb; ipdb.set_trace()
     trans_df = pd.read_csv(trans_fname, \
             skip_blank_lines=True, \
             warn_bad_lines=True, error_bad_lines=False)
-    output_fname = 'select_' + os.path.basename(trans_fname)
 
-    # to dump all the separate columns from the trans_df (closedtickets1.csv)
-    # for header in tqdm(trans_df.keys()):
-    #  dump_each_column(trans_df, 'output_dir', header)
+    # to dump all the separate columns from the trans_df
     dump_each_column(
         trans_df, output_dir, [line.rstrip("\n") for line in open(features_fname)], output_fname
     )
