@@ -1,4 +1,5 @@
 locat
+ticketnum
 price
 paycode
 make

@@ -1,4 +1,5 @@
 locat
+ticketnum
 dtout
 paycode
 make 
