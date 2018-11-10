@@ -31,7 +31,10 @@ def dump_each_column(trans_df, outdir, header, output_fname='dataset.csv'):
 def select_columns(trans_fname, features_fname, output_dir):
     """ Function selects columns
     """
-    trans_df = pd.read_csv(trans_fname)
+    import ipdb; ipdb.set_trace()
+    trans_df = pd.read_csv(trans_fname, \
+            skip_blank_lines=True, \
+            warn_bad_lines=True, error_bad_lines=False)
     output_fname = 'select_' + os.path.basename(trans_fname)
 
     # to dump all the separate columns from the trans_df (closedtickets1.csv)

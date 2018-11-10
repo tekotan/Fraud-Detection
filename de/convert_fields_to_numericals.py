@@ -3,8 +3,8 @@ import pandas as pd
 from tqdm import tqdm
 import math
 
-def change_one_hot():
-    df = pd.read_csv("./de/full_data/dataset.csv")
+def convert_select_columns_to_numericals(select_csv_fname):
+    df = pd.read_csv(select_csv_fname)
     array_df = np.array(df)
     key_dict = {}
     string_index=[]
@@ -19,8 +19,6 @@ def change_one_hot():
             if val not in li:
                 if isinstance(val, str):
                     li.append(val)
-            else:
-                pass
         key_dict["key_"+df.keys()[index]] = sorted(li)
         for n, i in enumerate(array_df[:, index]):
             if isinstance(i, str):
