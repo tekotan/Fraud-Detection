@@ -2,9 +2,9 @@ locat
 ticketnum
 dtout
 paycode
-make 
-color 
+make
+color
 plate
-ccdaccount 
-ccdexpdate 
+ccdaccount
+ccdexpdate
 ratedescription
