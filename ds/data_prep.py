@@ -12,19 +12,31 @@ from utils import standard_scaler, maxmin_scaler
 
 class FdDataPrep(object):
     def __init__(self):
-        FEATURE_COUNT = 63
+        FEATURE_COUNT = 11
         self.MULTI_THREADING = True
 
         self.HEADER = ["key"]
         self.HEADER_DEFAULTS = [[0]]
         self.UNUSED_FEATURE_NAMES = ["key"]
         self.LABEL_FEATURE_NAME = "LABEL"
-        self.FEATURE_NAMES = []
+        self.FEATURE_NAMES = [
+            "locat",
+            "ticketnum",
+            "dtout",
+            "paycode",
+            "make",
+            "color",
+            "plate",
+            "ccdaccount",
+            "ccdexpdate",
+            "ratedescription",
+            "label",
+        ]
 
-        for i in range(FEATURE_COUNT):
-            self.HEADER += ["x_{}".format(str(i + 1))]
-            self.FEATURE_NAMES += ["x_{}".format(str(i + 1))]
-            self.HEADER_DEFAULTS += [[0.0]]
+        #        for i in range(FEATURE_COUNT):
+        #            self.HEADER += ["x_{}".format(str(i + 1))]
+        #            self.FEATURE_NAMES += ["x_{}".format(str(i + 1))]
+        #            self.HEADER_DEFAULTS += [[0.0]]
 
         self.HEADER += [self.LABEL_FEATURE_NAME]
         self.HEADER_DEFAULTS += [["NA"]]
@@ -111,7 +123,7 @@ class FdDataPrep(object):
             feature_min = (
                 -100000
             )  # df_params[df_params.feature_name == feature_name]['min'].values[0]
-            normalizer_fn = lambda x: maxmin_scaler(x, feature_max, feature_min)
+            # normalizer_fn = lambda x: maxmin_scaler(x, feature_max, feature_min)
 
             feature_columns[feature_name] = tf.feature_column.numeric_column(
                 feature_name,
