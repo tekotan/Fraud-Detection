@@ -1,5 +1,6 @@
 """ Create ML training data based on rules and augment """
 import argparse
+import glob
 import os
 import numpy as np
 import pandas as pd
@@ -7,33 +8,36 @@ from tqdm import tqdm
 from de.select_columns import select_columns
 
 class LossPrevTrainingDataPrep(object):
-  def __init__(self, redshift_trans_csv_fname, \
+  def __init__(self, redshift_trans_csv_dirname, \
     ml_features_columns_fname, \
     da_features_columns_fname, output_dir):
     """ constructor
     Args:
-      redshift_trans_csv_fname (str): original redshift dump file name \
-        with all transactions
+      redshift_trans_csv_dirname (str): original redshift dump files \
+        folder name with all transactions csv files
       ml_features_columns_fname (str): all the features required \
-        for ML training
+        for ML training. default will be taken from fheaders
       da_features_columns_fname (str): all the features required \
         for data augmentation. Will use these \
         columns to apply rules to generate fraud \
-        data for training
+        data for training. default will be taken from fheaders
       output_path (str): absolute path to dump output
     """
-    self.redshift_trans_csv_fname = redshift_trans_csv_fname
+    self.redshift_trans_csv_dirname = redshift_trans_csv_dirname
     self.ml_features_columns_fname = ml_features_columns_fname
     self.da_features_columns_fname = da_features_columns_fname
+    # Add redshift input dirname as subdir of output_dir
+    output_dir = os.path.join(output_dir, \
+            os.path.basename(self.redshift_trans_csv_dirname))
     self.output_path = os.path.abspath(output_dir)
     if not os.path.exists(self.output_path):
       os.makedirs(self.output_path)
 
     # selected columns file name
     self.da_features_select_fname = 'da_select_' + \
-      os.path.basename(self.redshift_trans_csv_fname)
+      os.path.basename(self.redshift_trans_csv_dirname) + '.csv'
     self.ml_features_select_fname = 'ml_select_' + \
-      os.path.basename(self.redshift_trans_csv_fname)
+      os.path.basename(self.redshift_trans_csv_dirname) + '.csv'
 
   def append_labels_to_final_training_data(self, fraud_transactions):
     """ Function appends label to produce final training data
@@ -57,7 +61,8 @@ class LossPrevTrainingDataPrep(object):
     # dump the file
     fname = os.path.join(self.output_path, \
       'ml_select_with_label_' + \
-      os.path.basename(self.redshift_trans_csv_fname))
+      os.path.basename(self.redshift_trans_csv_dirname)) + \
+      '.csv'
 
     select_df.to_csv(fname)
 
@@ -149,7 +154,8 @@ class LossPrevTrainingDataPrep(object):
     # dump the file
     fname = os.path.join(self.output_path, \
       'da_select_with_label_' + \
-      os.path.basename(self.redshift_trans_csv_fname))
+      os.path.basename(self.redshift_trans_csv_dirname)) + \
+      '.csv'
     select_df.to_csv(fname)
 
     return fraud_transactions
@@ -175,35 +181,38 @@ class LossPrevTrainingDataPrep(object):
     """
     # Step-1: 
     # select columns based on self.da_features_columns_fname
-    select_columns(self.redshift_trans_csv_fname, \
-      self.da_features_columns_fname, \
-      self.output_path, \
-      output_fname=self.da_features_select_fname)
+    print('\n*** Step-1: selecting da columns...')
+    csv_flist = glob.glob(os.path.join(self.redshift_trans_csv_dirname, \
+            "*.csv"))
+    select_columns(csv_flist, self.da_features_columns_fname, \
+      self.output_path, output_fname=self.da_features_select_fname)
 
     # Step-2:
     # Apply rules to get fraud data
+    print('\n*** Step-2: generating fraud training data...')
     fraud_transactions = self.generate_fraud_training_data()
 
     # Step-3:
     # select columns based on self.ml_features_columns_fname
-    select_columns(self.redshift_trans_csv_fname, \
-      self.ml_features_columns_fname, \
-      self.output_path, \
-      output_fname=self.ml_features_select_fname)
+    print('\n*** Step-3: selecting ml columns...')
+    select_columns(csv_flist, self.ml_features_columns_fname, \
+      self.output_path, output_fname=self.ml_features_select_fname)
 
     # Step-4:
-    # Augment labels to final trainig data
+    # Augment labels to final training data
+    print('\n*** Step-4: augmenting labels to final training data...')
     self.append_labels_to_final_training_data(fraud_transactions)
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
-  parser.add_argument('-i', '--redshift_trans_csv_fname', \
+  parser.add_argument('-i', '--redshift_trans_csv_dirname', \
     type=str, required=True, \
     help="Original transaction csv file from redshift dump")
   parser.add_argument('-ml_f', '--ml_features_columns_fname', type=str, \
-    required=True, help="Text file to have ML features' headers")
+    default='./fheaders/ml_features_headers.txt', \
+    help="Text file to have ML features' headers")
   parser.add_argument('-da_f', '--data_aug_features_columns_fname', \
-    type=str, required=True, \
+    type=str, default='./fheaders/training_data_aug_headers.txt', \
     help="Text file to have ML features' headers")
   parser.add_argument('-o', '--output_dir', type=str, \
     required=True, help="Output dir")
@@ -212,14 +221,14 @@ if __name__ == "__main__":
   # uncomment to dump keys to keys.txt file
   # dump_keys(trans_df)
 
-  redshift_trans_csv_fname = args.redshift_trans_csv_fname
+  redshift_trans_csv_dirname = args.redshift_trans_csv_dirname
   ml_features_columns_fname = args.ml_features_columns_fname
   da_features_columns_fname = args.data_aug_features_columns_fname
 
   # Prepare output directory
   output_dir = args.output_dir
 
-  trn_dataprep = LossPrevTrainingDataPrep(redshift_trans_csv_fname, \
+  trn_dataprep = LossPrevTrainingDataPrep(redshift_trans_csv_dirname, \
     ml_features_columns_fname, \
     da_features_columns_fname, \
     output_dir)
