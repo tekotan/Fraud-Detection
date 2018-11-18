@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from de.select_columns import select_columns
-from de.convert_fields_to_numericals import convert_select_columns_to_numericals
 
 class LossPrevTrainingDataPrep(object):
   def __init__(self, redshift_trans_csv_fname, \
