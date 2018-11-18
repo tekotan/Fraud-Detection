@@ -28,12 +28,18 @@ def dump_each_column(trans_df, outdir, header, output_fname='dataset.csv'):
     header_list = header
     trans_df.to_csv(fname, columns=header_list)
 
-def select_columns(trans_fname, features_fname, output_dir, output_fname):
+def select_columns(trans_csv_flist, features_fname, output_dir, output_fname):
     """ Function selects columns
     """
-    trans_df = pd.read_csv(trans_fname, \
-            skip_blank_lines=True, \
-            warn_bad_lines=True, error_bad_lines=False)
+    df_list = []
+    for csvf in tqdm(trans_csv_flist):
+      df = pd.read_csv(csvf, \
+          skip_blank_lines=True, \
+          warn_bad_lines=False, error_bad_lines=False)
+      df_list.append(df)
+
+    trans_df = pd.concat(df_list)
+
 
     # to dump all the separate columns from the trans_df
     dump_each_column(
@@ -42,7 +48,7 @@ def select_columns(trans_fname, features_fname, output_dir, output_fname):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--input_csv', type=str, \
+    parser.add_argument('-i', '--input_csv_flist', type=list, \
             required=True, help="Input csv file")
     parser.add_argument('-f', '--feature_columns', type=str, \
             required=True, help="Text file to have features (headers)")
@@ -53,7 +59,7 @@ if __name__ == "__main__":
     # uncomment to dump keys to keys.txt file
     # dump_keys(trans_df)
 
-    trans_fname = args.input_csv
+    trans_csv_flist = args.input_csv_flist
     features_fname = args.feature_columns
     output_dir = args.output_dir
-    select_columns(trans_fname, features_fname, output_dir)
+    select_columns(trans_csv_flist, features_fname, output_dir)
