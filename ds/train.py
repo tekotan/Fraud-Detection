@@ -1,3 +1,7 @@
+from tensorflow.python import debug as tf_debug
+import ipdb
+from convert_fields_to_numericals import convert_select_columns_to_numericals
+import sys
 import pandas as pd
 import numpy as np
 import shutil
@@ -9,15 +13,13 @@ from tensorflow.python.feature_column import feature_column
 from tensorflow.contrib.learn import learn_runner
 from tensorflow.contrib.learn import make_export_strategy
 from tensorflow import data
-
+from tqdm import tqdm
 from data_prep import FdDataPrep
 from fd_model import FdModel
 
 print(tf.__version__)
-import sys
 
 sys.path.append("../de")
-from convert_fields_to_numericals import convert_select_columns_to_numericals
 
 #################################################
 # Settings
@@ -63,7 +65,6 @@ hparams = tf.contrib.training.HParams(
 run_config = tf.estimator.RunConfig(
     save_checkpoints_steps=32, tf_random_seed=19830610, model_dir=model_dir
 )
-
 # Print to verify
 print(hparams)
 print("Model Directory:", run_config.model_dir)
@@ -82,7 +83,10 @@ print("Save Checkpoint After", CHECKPOINT_STEPS, "steps")
         mode=tf.contrib.learn.ModeKeys.TRAIN,
         num_epochs=hparams.num_epochs,
         batch_size=hparams.batch_size,"""
-features, key = convert_select_columns_to_numericals(TRAIN_DATA_FILE)
+# features, key = convert_select_columns_to_numericals(TRAIN_DATA_FILE)
+features = np.array(pd.read_csv(
+    TRAIN_DATA_FILE).dropna(how="any").get_values())
+key = convert_select_columns_to_numericals(TRAIN_DATA_FILE)
 head = [
     "s",
     "Unnamed: 0",
@@ -98,14 +102,15 @@ head = [
     "ratedescription",
     "label",
 ]
-
 x = {}
 for n, i in enumerate(head):
-    if n == 0 or n == 1:
+    if i == "s" or i == "dtout" or i == "Unnamed: 0":
         pass
     else:
-        x[i] = features[n]
-print(len(x))
+        if i in key.keys():
+            x[i] = features[:, n].astype(str)
+        else:
+            x[i] = features[:, n].astype(np.float32)
 train_spec = tf.estimator.TrainSpec(
     input_fn=tf.estimator.inputs.numpy_input_fn(
         x, num_epochs=hparams.num_epochs, batch_size=hparams.batch_size, shuffle=True
@@ -113,21 +118,11 @@ train_spec = tf.estimator.TrainSpec(
     max_steps=hparams.max_steps,
     hooks=None,
 )
-"""train_spec = tf.estimator.TrainSpec(
-    input_fn=lambda: fd_data_prep.csv_input_fn(
-        TRAIN_DATA_FILE,
-        mode=tf.contrib.learn.ModeKeys.TRAIN,
-        num_epochs=hparams.num_epochs,
-        batch_size=hparams.batch_size,
-    ),
-    max_steps=hparams.max_steps,
-    hooks=None,
-)"""
 
 
 eval_spec = tf.estimator.EvalSpec(
     input_fn=tf.estimator.inputs.numpy_input_fn(
-        x, num_epochs=1, batch_size=hparams.batch_size, shuffle=True
+        x, num_epochs=1, batch_size=hparams.batch_size, shuffle=False
     ),
     #   exporters=[tf.estimator.LatestExporter(
     #     name="encode",  # the name of the folder in which the model will be exported to under export
@@ -156,9 +151,8 @@ print(".......................................")
 estimator = fd_model.create_estimator(run_config, hparams)
 
 # Train model
-tf.estimator.train_and_evaluate(
-    estimator=estimator, train_spec=train_spec, eval_spec=eval_spec
-)
+tf.estimator.train_and_evaluate(estimator=estimator,
+                                train_spec=train_spec, eval_spec=eval_spec)
 
 time_end = datetime.utcnow()
 print(".......................................")

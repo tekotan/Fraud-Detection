@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.python.feature_column import feature_column
 from tensorflow.contrib.learn import learn_runner
 from tensorflow.contrib.learn import make_export_strategy
-
+import ipdb
 from data_prep import FdDataPrep
 
 
@@ -12,7 +12,6 @@ class FdModel(object):
         self.FEATURE_NAMES = self.data_prep.FEATURE_NAMES
 
     def autoencoder_model_fn(self, features, labels, mode, params):
-
         feature_columns = list(self.data_prep.get_feature_columns().values())
 
         input_layer_size = len(feature_columns)
@@ -24,11 +23,16 @@ class FdModel(object):
         decoder_hidden_units.reverse()
         decoder_hidden_units.pop(0)
 
-        output_layer_size = len(feature_columns)
-
         he_initialiser = tf.contrib.layers.variance_scaling_initializer()
         l2_regulariser = tf.contrib.layers.l2_regularizer(scale=params.l2_reg)
 
+        is_training = mode == tf.estimator.ModeKeys.TRAIN
+
+        # input layer
+        input_layer = tf.feature_column.input_layer(
+            features=features, feature_columns=feature_columns
+        )
+        output_layer_size = int(input_layer.get_shape()[1])
         print(
             "[{}]->{}-{}->[{}]".format(
                 len(feature_columns),
@@ -37,14 +41,6 @@ class FdModel(object):
                 output_layer_size,
             )
         )
-
-        is_training = mode == tf.estimator.ModeKeys.TRAIN
-
-        # input layer
-        input_layer = tf.feature_column.input_layer(
-            features=features, feature_columns=feature_columns
-        )
-
         # Adding Gaussian Noise to input layer
         #    noisy_input_layer = input_layer + (params.noise_level * tf.random_normal(tf.shape(input_layer)))
 
@@ -95,7 +91,8 @@ class FdModel(object):
                 "encoding": encoding_output,
                 "reconstruction": reconstruction_output,
             }
-            export_outputs = {"predict": tf.estimator.export.PredictOutput(predictions)}
+            export_outputs = {
+                "predict": tf.estimator.export.PredictOutput(predictions)}
 
             # Provide an estimator spec for `ModeKeys.PREDICT` modes.
             return tf.estimator.EstimatorSpec(
@@ -106,7 +103,6 @@ class FdModel(object):
 
         #   reconstruction_loss = tf.losses.mean_squared_error(tf.squeeze(input_layer), reconstruction_output)
         #   loss = reconstruction_loss + tf.losses.get_regularization_loss()
-
         reconstruction_loss = tf.losses.sigmoid_cross_entropy(
             multi_class_labels=tf.squeeze(input_layer), logits=tf.squeeze(output_layer)
         )
@@ -116,7 +112,8 @@ class FdModel(object):
         optimizer = tf.train.AdamOptimizer(params.learning_rate)
 
         # Create training operation
-        train_op = optimizer.minimize(loss=loss, global_step=tf.train.get_global_step())
+        train_op = optimizer.minimize(
+            loss=loss, global_step=tf.train.get_global_step())
 
         # Calculate root mean squared error as additional eval metric
         eval_metric_ops = {

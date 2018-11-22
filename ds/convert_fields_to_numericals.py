@@ -22,19 +22,20 @@ def convert_select_columns_to_numericals(select_csv_fname):
                 if val not in li:
                     if isinstance(val, str):
                         li.append(val)
-            key_dict["key_" + df.keys()[index]] = sorted(li)
-            for n, i in enumerate(array_df[:, index]):
-                if isinstance(i, str):
-                    temp = np.zeros(len(key_dict["key_" + df.keys()[index]]))
-                    temp[key_dict["key_" + df.keys()[index]].index(i)] = 1
-                    array_df[n, index] = temp
-                else:
-                    temp = np.zeros(len(key_dict["key_" + df.keys()[index]]))
-                    array_df[n, index] = temp
-        fin_list.append(np.vstack(array_df[1:, index]))
-    print(type(array_df))
-    for i in range(len(fin_list)):
-        fin_list[i] = np.vstack(fin_list[i])
-    import ipdb
+            key_dict[df.keys()[index]] = sorted(li)
+    #         for n, i in enumerate(array_df[:, index]):
+    #             if isinstance(i, str):
+    #                 temp = np.zeros((1, len(key_dict[df.keys()[index]])))
+    #                 temp[0, key_dict[df.keys()[index]].index(i)] = 1
+    #                 array_df[n, index] = np.array([temp])
+    #             else:
+    #                 temp = np.zeros((1, len(key_dict[df.keys()[index]])))
+    #                 array_df[n, index] = np.array([temp])
+    #     fin_list.append(np.vstack(array_df[1:, index]))
+    # print(type(array_df))
+    # for i in range(len(fin_list)):
+    #     fin_list[i] = np.vstack(fin_list[i])
+    # import ipdb
 
-    return fin_list, key_dict
+    # return fin_list, key_dict
+    return key_dict
