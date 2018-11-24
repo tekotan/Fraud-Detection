@@ -1,47 +1,39 @@
-import pandas as pd
-import numpy as np
 import shutil
-import multiprocessing
 from datetime import datetime
 
 import tensorflow as tf
 from tensorflow.python.feature_column import feature_column
 from tensorflow.contrib.learn import learn_runner
 from tensorflow.contrib.learn import make_export_strategy
-from tensorflow import data
+from tqdm import tqdm
 
 from data_prep import FdDataPrep
 from fd_model import FdModel
-
-print(tf.__version__)
 
 #################################################
 # Settings
 #################################################
 RESUME_TRAINING = False
 
-TRAIN_DATA_FILE = "../de/full_data/dataset.csv"
-TRAIN_SIZE = 2000
+#TRAIN_DATA_FILE = "../de/trn_data_out/closed_apr/da_select_filtered_with_label_closed_apr.csv"
+TRAIN_DATA_FILE = "./da_select_filtered_with_label_closed_apr.csv"
+TRAIN_SIZE = 100000
 NUM_EPOCHS = 1000
-BATCH_SIZE = 100
-NUM_EVAL = 10
+BATCH_SIZE = 32
+NUM_EVAL = 1
 MODEL_NAME = "auto-encoder-02"
 model_dir = "trained_models/{}".format(MODEL_NAME)
 #################################################
 
 
 # Create data prep and model objects
-fd_data_prep = FdDataPrep()
-fd_model = FdModel()
+fd_data_prep = FdDataPrep(TRAIN_DATA_FILE)
+fd_model = FdModel(fd_data_prep)
 
-features, target = fd_data_prep.csv_input_fn(files_name_pattern="data-*.csv")
-print("Feature read from CSV: {}".format(list(features.keys())))
-print("Target read from CSV: {}".format(target))
-
-print(fd_data_prep.get_feature_columns())
-
+# Steps
 TOTAL_STEPS = (TRAIN_SIZE / BATCH_SIZE) * NUM_EPOCHS
 CHECKPOINT_STEPS = int((TRAIN_SIZE / BATCH_SIZE) * (NUM_EPOCHS / NUM_EVAL))
+print(TOTAL_STEPS)
 
 # hyper-params
 hparams = tf.contrib.training.HParams(
@@ -57,9 +49,7 @@ hparams = tf.contrib.training.HParams(
 
 # Run config for training
 run_config = tf.estimator.RunConfig(
-    save_checkpoints_steps=CHECKPOINT_STEPS,
-    tf_random_seed=19830610,
-    model_dir=model_dir,
+    save_checkpoints_steps=32, tf_random_seed=19830610, model_dir=model_dir
 )
 
 # Print to verify
@@ -75,31 +65,21 @@ print("That is 1 evaluation step after each", NUM_EPOCHS / NUM_EVAL, " epochs")
 print("Save Checkpoint After", CHECKPOINT_STEPS, "steps")
 
 # Create train and eval specs
+train_x = fd_data_prep.read_ae_training_data()
+
 train_spec = tf.estimator.TrainSpec(
-    input_fn=lambda: fd_data_prep.csv_input_fn(
-        TRAIN_DATA_FILE,
-        mode=tf.contrib.learn.ModeKeys.TRAIN,
-        num_epochs=hparams.num_epochs,
-        batch_size=hparams.batch_size,
+    input_fn=tf.estimator.inputs.pandas_input_fn(
+        train_x, num_epochs=hparams.num_epochs, \
+            batch_size=hparams.batch_size, shuffle=True
     ),
     max_steps=hparams.max_steps,
     hooks=None,
 )
 
 eval_spec = tf.estimator.EvalSpec(
-    input_fn=lambda: fd_data_prep.csv_input_fn(
-        TRAIN_DATA_FILE,
-        mode=tf.contrib.learn.ModeKeys.EVAL,
-        num_epochs=1,
-        batch_size=hparams.batch_size,
+    input_fn=tf.estimator.inputs.pandas_input_fn(
+        train_x, num_epochs=1, batch_size=hparams.batch_size, shuffle=False
     ),
-    #   exporters=[tf.estimator.LatestExporter(
-    #     name="encode",  # the name of the folder in which the model will be exported to under export
-    #     serving_input_receiver_fn=csv_serving_input_fn,
-    #     exports_to_keep=1,
-    #     as_text=True)],
-    steps=None,
-    hooks=None,
 )
 
 # Remove previous artifacts if no resume_trainig
@@ -120,9 +100,8 @@ print(".......................................")
 estimator = fd_model.create_estimator(run_config, hparams)
 
 # Train model
-tf.estimator.train_and_evaluate(
-    estimator=estimator, train_spec=train_spec, eval_spec=eval_spec
-)
+tf.estimator.train_and_evaluate(estimator=estimator,
+                                train_spec=train_spec, eval_spec=eval_spec)
 
 time_end = datetime.utcnow()
 print(".......................................")
