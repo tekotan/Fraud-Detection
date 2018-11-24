@@ -98,12 +98,12 @@ class FdModel(object):
 
     # Define loss based on reconstruction and regularization
 
-    #   reconstruction_loss = tf.losses.mean_squared_error(tf.squeeze(input_layer), reconstruction_output)
-    #   loss = reconstruction_loss + tf.losses.get_regularization_loss()
-    reconstruction_loss = tf.losses.sigmoid_cross_entropy(
-        multi_class_labels=tf.squeeze(input_layer), logits=tf.squeeze(output_layer)
-    )
+    reconstruction_loss = tf.losses.mean_squared_error(tf.squeeze(input_layer), reconstruction_output)
     loss = reconstruction_loss + tf.losses.get_regularization_loss()
+    #reconstruction_loss = tf.losses.sigmoid_cross_entropy(
+        #multi_class_labels=tf.squeeze(input_layer), logits=tf.squeeze(output_layer)
+    #)
+    #loss = reconstruction_loss + tf.losses.get_regularization_loss()
 
     # Create Optimiser
     optimizer = tf.train.AdamOptimizer(params.learning_rate)
