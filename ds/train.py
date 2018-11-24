@@ -15,8 +15,8 @@ from fd_model import FdModel
 #################################################
 RESUME_TRAINING = False
 
-#TRAIN_DATA_FILE = "../de/trn_data_out/closed_apr/da_select_filtered_with_label_closed_apr.csv"
-TRAIN_DATA_FILE = "./da_select_filtered_with_label_closed_apr.csv"
+TRAIN_DATA_FILE = "../de/trn_data_out/closed_apr/da_select_filtered_with_label_closed_apr.csv"
+#TRAIN_DATA_FILE = "./da_select_filtered_with_label_closed_apr.csv"
 TRAIN_SIZE = 100000
 NUM_EPOCHS = 1000
 BATCH_SIZE = 32
@@ -39,12 +39,12 @@ print(TOTAL_STEPS)
 hparams = tf.contrib.training.HParams(
     num_epochs=NUM_EPOCHS,
     batch_size=BATCH_SIZE,
-    encoder_hidden_units=[30, 3],
-    learning_rate=0.01,
-    l2_reg=0.0001,
+    encoder_hidden_units=[100, 30, 3],
+    learning_rate=0.001,
+    l2_reg=0.0000,
     noise_level=0.0,
     max_steps=TOTAL_STEPS,
-    dropout_rate=0.05,
+    dropout_rate=0.00,
 )
 
 # Run config for training
