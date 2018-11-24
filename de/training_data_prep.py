@@ -109,14 +109,17 @@ class LossPrevTrainingDataPrep(object):
       paycode == 3, paycode == 4), \
       paycode == 6), paycode == 10)
     select_df = select_df[paycode_logical_or]
-    # select_df.to_csv(os.path.join(self.output_path, 'da_select_debug.csv'))
 
     # Ignore nan 
     select_df = select_df.dropna(subset=['ccdaccount'])
 
+    # select_df.to_csv(os.path.join(self.output_path, \
+        # 'da_select_filtered.csv'))
+
     ## Apply rules to generate label
 
     location_dict = {}
+
     def build_fraud_transaction_map(row):
       """ Same credit card (paycode, ccdaccount, ccdexpdate) \
         used at the same facility (locat) in the \
@@ -153,7 +156,7 @@ class LossPrevTrainingDataPrep(object):
     
     # dump the file
     fname = os.path.join(self.output_path, \
-      'da_select_with_label_' + \
+      'da_select_filtered_with_label_' + \
       os.path.basename(self.redshift_trans_csv_dirname)) + \
       '.csv'
     select_df.to_csv(fname)
@@ -174,7 +177,7 @@ class LossPrevTrainingDataPrep(object):
         feature columns for data augmentation
       Step-2: Apply rules to identify if a transaction is fraud \
         and create labels and dump another file \
-        'da_select_with_label_<>.csv'
+        'da_select_filtered_with_label_<>.csv'
       Step-3: Dump file 'ml_select_<>.csv' to have all \
         feature columns required for ml
       Step-4: Append labels from Step-3 to ml_select_with_label_<>.csv

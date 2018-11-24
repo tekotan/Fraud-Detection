@@ -1,2 +1,2 @@
 # To generate selected columns
-python3 ./select_columns.py -i ../data/closedtickets1.csv -o ./outdir -f fheaders/feature_headers.txt
+python3 training_data_prep.py -i /home/ajay/data/2018/closed_apr -o ./trn_data_out
