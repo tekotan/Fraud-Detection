@@ -19,10 +19,10 @@ class FdDataPrep(object):
       "make",
       "color",
       "plate",
-      "ccdaccount",
-      "ccdexpdate",
+      # "ccdaccount",
+      # "ccdexpdate",
       # "ratedescription",
-      # "label",
+      "label",
     ]
 
     print("Autoencoder Features: {}".format(self.auto_encoder_features_list))
@@ -89,7 +89,7 @@ class FdDataPrep(object):
       warn_bad_lines=True, error_bad_lines=False)
     string_keys = {}
     for col in self.auto_encoder_features_string_cols:
-      value = sorted(train_df[col].unique())
+      value = sorted(train_df[col].astype(str).unique())
       string_keys[col] = value
     return string_keys
 
