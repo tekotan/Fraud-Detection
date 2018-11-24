@@ -1,108 +1,127 @@
+import os
 import pandas as pd
 import numpy as np
 import shutil
 import multiprocessing
 from datetime import datetime
-from convert_fields_to_numericals import convert_select_columns_to_numericals
 import tensorflow as tf
 from tensorflow.python.feature_column import feature_column
+from tqdm import tqdm
 
 from utils import standard_scaler, maxmin_scaler
 
-
 class FdDataPrep(object):
-    def __init__(self):
-        FEATURE_COUNT = 11
-        self.MULTI_THREADING = True
+  def __init__(self, training_dfile, tmp_data_dir='./tmp_train_data_dir'):
+    self.auto_encoder_features_list = [
+      "locat",
+      # "ticketnum",
+      "paycode",
+      "make",
+      "color",
+      "plate",
+      "ccdaccount",
+      "ccdexpdate",
+      # "ratedescription",
+      # "label",
+    ]
 
-        self.HEADER = ["key"]
-        self.HEADER_DEFAULTS = [[0]]
-        self.UNUSED_FEATURE_NAMES = ["key"]
-        self.LABEL_FEATURE_NAME = "LABEL"
-        self.FEATURE_NAMES = [
-            "locat",
-            "ticketnum",
-            "paycode",
-            "make",
-            "color",
-            "plate",
-            "ccdaccount",
-            "ccdexpdate",
-            "ratedescription",
-            "label",
-        ]
+    print("Autoencoder Features: {}".format(self.auto_encoder_features_list))
 
-        #        for i in range(FEATURE_COUNT):
-        #            self.HEADER += ["x_{}".format(str(i + 1))]
-        #            self.FEATURE_NAMES += ["x_{}".format(str(i + 1))]
-        #            self.HEADER_DEFAULTS += [[0.0]]
+    self.tmp_data_dir = tmp_data_dir
+    if os.path.exists(self.tmp_data_dir) is False:
+      os.makedirs(self.tmp_data_dir)
+    self.auto_encoder_features_string_cols = []
+    self.auto_encoder_features_num_cols = []
+    self.training_dfile = self.filter_auto_encoder_features(training_dfile)
 
-        self.HEADER += [self.LABEL_FEATURE_NAME]
-        self.HEADER_DEFAULTS += [["NA"]]
+  def filter_auto_encoder_features(self, training_dfile):
+    fname = 'autoencoder_' + os.path.basename(training_dfile)
+    new_training_dfile = os.path.join(self.tmp_data_dir, fname)
+    train_df = pd.read_csv(training_dfile, \
+      skip_blank_lines=True, \
+      warn_bad_lines=True, error_bad_lines=False)
+    new_train_df = None
+    new_train_df = train_df.loc[:, \
+        train_df.columns.isin(self.auto_encoder_features_list)]
+    new_train_df.to_csv(new_training_dfile)
 
-        print("self.Header: {}".format(self.HEADER))
-        print("Features: {}".format(self.FEATURE_NAMES))
-        print("Label Feature: {}".format(self.LABEL_FEATURE_NAME))
-        print("Unused Features: {}".format(self.UNUSED_FEATURE_NAMES))
+    # Get non numerical column idx (strings)
+    for idx, value in enumerate(new_train_df.values[0, :]):
+      if isinstance(value, float) or isinstance(value, int):
+        self.auto_encoder_features_num_cols.\
+            append(new_train_df.columns[idx])
+      else:
+        self.auto_encoder_features_string_cols.\
+            append(new_train_df.columns[idx])
 
-    def parse_csv_row(self, csv_row):
+    return new_training_dfile
 
-        columns = tf.decode_csv(csv_row, record_defaults=self.HEADER_DEFAULTS)
-        features = dict(zip(self.HEADER, columns))
+  def convert_select_columns_to_numericals(self):
+    train_df = pd.read_csv(self.training_dfile)
 
-        for column in self.UNUSED_FEATURE_NAMES:
-            features.pop(column)
+    # Get non numerical column idx
+    string_index = []
+    for n, i in enumerate(train_df.values[0, :]):
+      if train_df.columns[n] not in self.auto_encoder_features_list:
+        pass
+      elif isinstance(i, float) or isinstance(i, int):
+        pass
+      else:
+        string_index.append(n)
 
-        target = features.pop(self.LABEL_FEATURE_NAME)
+    key_dict = {}
+    array_df = np.array(train_df.values[1:, :])
+    for index in tqdm(range(array_df.shape[1])):
+      if train_df.columns[index] not in self.auto_encoder_features_list:
+        pass
+      elif index in string_index:
+        li = []
+        for val in train_df.values[:, index]:
+          if val not in li:
+            if isinstance(val, str):
+              li.append(val)
+        key_dict[train_df.keys()[index]] = sorted(li)
+    return key_dict
+    
+  def create_vocab_list_for_string_columns(self):
+    train_df = pd.read_csv(self.training_dfile, \
+      skip_blank_lines=True, \
+      warn_bad_lines=True, error_bad_lines=False)
+    string_keys = {}
+    for col in self.auto_encoder_features_string_cols:
+      value = sorted(train_df[col].unique())
+      string_keys[col] = value
+    return string_keys
 
-        return features, target
+  def get_feature_columns(self):
+    string_col_keys = self.create_vocab_list_for_string_columns()
 
-    def get_feature_columns(self):
-        """
-    df_params = pd.read_csv("data/params.csv", header=0, index_col=0)
-    len(df_params)
-    df_params['feature_name'] = self.FEATURE_NAMES
-    df_params.head()
-    """
-        TRAIN_DATA_FILE = "../de/trn_data_out/da_select_with_label_Orig_Data.csv"
-        key = convert_select_columns_to_numericals(TRAIN_DATA_FILE)
-        feature_columns = {}
+    feature_columns = {}
 
-        #   feature_columns = {feature_name: tf.feature_column.numeric_column(feature_name)
-        #            for feature_name in self.FEATURE_NAMES}
-        # s,0,locat,ticketnum,dtout,paycode,make,color,plate,ccdaccount,ccdexpdate,ratedescription,label
-        # 9,9,705.0,256828.0,2018-06-04 14:48:32.817,4.0,Honda,White,BKD6171,1751,0420,Joint Diseases Hospital,0
-        # for feature_name in self.FEATURE_NAMES:
-        #
-        #     feature_max = (
-        #         100000
-        #     )  # df_params[df_params.feature_name == feature_name]['max'].values[0]
-        #     feature_min = (
-        #         -100000
-        #     )  # df_params[df_params.feature_name == feature_name]['min'].values[0]
-        #     # normalizer_fn = lambda x: maxmin_scaler(x, feature_max, feature_min)
-        #
-        #     feature_columns[feature_name] = tf.feature_column.numeric_column(
-        #         feature_name,
-        #         # Disable normalizer
-        #         # normalizer_fn=normalizer_fn
-        #     )
-        for index in self.FEATURE_NAMES:
-            if index in key.keys():
-                if len(key[index]) < 100:
-                    feature_columns[index] = tf.feature_column.indicator_column(
-                        tf.feature_column.categorical_column_with_vocabulary_list(
-                            index, vocabulary_list=key[index]
-                        )
-                    )
-                else:
-                    feature_columns[index] = tf.feature_column.indicator_column(
-                        tf.feature_column.categorical_column_with_hash_bucket(
-                            index, hash_bucket_size=100, dtype=tf.string
-                        )
-                    )
-            else:
-                feature_columns[index] = tf.feature_column.numeric_column(
-                    index)
-        print("Features Columns \n {}".format(feature_columns))
-        return feature_columns
+    for index in self.auto_encoder_features_list:
+      if index in string_col_keys.keys():
+        if len(string_col_keys[index]) < 100:
+          feature_columns[index] = tf.feature_column.indicator_column(
+            tf.feature_column.categorical_column_with_vocabulary_list(
+              index, vocabulary_list=string_col_keys[index]
+            )
+          )
+        else:
+          feature_columns[index] = tf.feature_column.indicator_column(
+            tf.feature_column.categorical_column_with_hash_bucket(
+              index, hash_bucket_size=100, dtype=tf.string
+            )
+          )
+      else:
+        feature_columns[index] = tf.feature_column.numeric_column(
+          index)
+    print("Features Columns \n {}".format(feature_columns))
+    return feature_columns
+
+  def read_ae_training_data(self):
+    features_df = pd.read_csv(self.training_dfile).dropna(how="any")
+    for i in self.auto_encoder_features_string_cols:
+      features_df[i] = features_df[i].astype(str) 
+    for i in self.auto_encoder_features_num_cols:
+      features_df[i] = features_df[i].astype(np.float64)
+    return features_df
