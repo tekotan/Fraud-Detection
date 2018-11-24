@@ -13,10 +13,10 @@ class FdModel(object):
 
     input_layer_size = len(feature_columns)
 
-    encoder_hidden_units = params.encoder_hidden_units
+    hidden_units = params.hidden_units
 
     # decoder units are the reverse of the encoder units, without the middle layer (redundant)
-    decoder_hidden_units = encoder_hidden_units.copy()
+    decoder_hidden_units = hidden_units.copy()
     decoder_hidden_units.reverse()
     decoder_hidden_units.pop(0)
 
@@ -33,7 +33,7 @@ class FdModel(object):
     print(
         "[{}]->{}-{}->[{}]".format(
             len(feature_columns),
-            encoder_hidden_units,
+            hidden_units,
             decoder_hidden_units,
             output_layer_size,
         )
@@ -55,7 +55,7 @@ class FdModel(object):
     encoding_hidden_layers = tf.contrib.layers.stack(
         inputs=dropout_layer,
         layer=tf.contrib.layers.fully_connected,
-        stack_args=encoder_hidden_units,
+        stack_args=hidden_units,
         weights_initializer=he_initialiser,
         weights_regularizer=l2_regulariser,
         activation_fn=tf.nn.relu,
@@ -128,10 +128,23 @@ class FdModel(object):
     )
     return estimator_spec
 
-  def create_estimator(self, run_config, hparams):
+  def create_autoencoder_estimator(self, run_config, hparams):
     estimator = tf.estimator.Estimator(
         model_fn=self.autoencoder_model_fn, params=hparams, config=run_config
     )
+
+    print("")
+    print("Estimator Type: {}".format(type(estimator)))
+    print("")
+
+    return estimator
+
+  def create_linear_classifier(self, run_config, hparams):
+    feature_columns = list(self.data_prep.get_feature_columns().values())
+    params = hparams
+    estimator = tf.estimator.DNNClassifier(feature_columns=feature_columns, \
+        hidden_units=params.hidden_units, 
+        n_classes=2, config=run_config)
 
     print("")
     print("Estimator Type: {}".format(type(estimator)))
