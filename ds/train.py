@@ -15,8 +15,8 @@ from fd_model import FdModel
 #################################################
 RESUME_TRAINING = False
 
-#TRAIN_DATA_FILE = "../de/trn_data_out/closed_apr/da_select_filtered_with_label_closed_apr.csv"
-TRAIN_DATA_FILE = "./da_select_filtered_with_label_closed_apr.csv"
+TRAIN_DATA_FILE = "../de/trn_data_out/closed_apr/da_select_filtered_with_label_closed_apr.csv"
+#TRAIN_DATA_FILE = "./da_select_filtered_with_label_closed_apr.csv"
 TRAIN_SIZE = 100000
 NUM_EPOCHS = 1000
 BATCH_SIZE = 32
@@ -39,12 +39,12 @@ print(TOTAL_STEPS)
 hparams = tf.contrib.training.HParams(
     num_epochs=NUM_EPOCHS,
     batch_size=BATCH_SIZE,
-    encoder_hidden_units=[30, 3],
-    learning_rate=0.01,
-    l2_reg=0.0001,
+    hidden_units=[100, 30, 3],
+    learning_rate=0.001,
+    l2_reg=0.0000,
     noise_level=0.0,
     max_steps=TOTAL_STEPS,
-    dropout_rate=0.05,
+    dropout_rate=0.00,
 )
 
 # Run config for training
@@ -65,11 +65,12 @@ print("That is 1 evaluation step after each", NUM_EPOCHS / NUM_EVAL, " epochs")
 print("Save Checkpoint After", CHECKPOINT_STEPS, "steps")
 
 # Create train and eval specs
-train_x = fd_data_prep.read_ae_training_data()
+import ipdb; ipdb.set_trace()
+train_x, train_y= fd_data_prep.read_training_data()
 
 train_spec = tf.estimator.TrainSpec(
     input_fn=tf.estimator.inputs.pandas_input_fn(
-        train_x, num_epochs=hparams.num_epochs, \
+        x=train_x, y=train_y, num_epochs=hparams.num_epochs, \
             batch_size=hparams.batch_size, shuffle=True
     ),
     max_steps=hparams.max_steps,
@@ -96,12 +97,19 @@ time_start = datetime.utcnow()
 print("Experiment started at {}".format(time_start.strftime("%H:%M:%S")))
 print(".......................................")
 
-# Create estimator
-estimator = fd_model.create_estimator(run_config, hparams)
+# Create autoencoder estimator
+ae_estimator = fd_model.create_autoencoder_estimator(run_config, hparams)
+
+# Create a simple DNNClassifier
+linear_classifier = fd_model.create_linear_classifier(run_config, hparams)
 
 # Train model
-tf.estimator.train_and_evaluate(estimator=estimator,
-                                train_spec=train_spec, eval_spec=eval_spec)
+tf.estimator.train_and_evaluate(
+    estimator=ae_estimator, 
+    # estimator=linear_classifier, 
+    train_spec=train_spec, 
+    eval_spec=eval_spec
+    )
 
 time_end = datetime.utcnow()
 print(".......................................")
