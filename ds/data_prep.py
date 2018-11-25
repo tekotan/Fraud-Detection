@@ -14,19 +14,20 @@ class FdDataPrep(object):
   def __init__(self, training_dfile, tmp_data_dir='./tmp_train_data_dir'):
     # We would retain all the columns from below list, last one being label.
     self.model_features_list = [
-      "locat",
-      # "ticketnum",
-      "paycode",
-      "make",
-      "color",
-      "plate",
-      # "ccdaccount",
-      # "ccdexpdate",
-      # "ratedescription",
-      "label",
+      'locat',
+      # 'ticketnum',
+      'paycode',
+      # 'make',
+      # 'color',
+      # 'plate',
+      # 'ccdaccount',
+      # 'ccdexpdate',
+      # 'ratedescription',
+      '_cardmultuses',
+      'label',
     ]
 
-    print("Model Features: {}".format(self.model_features_list))
+    print('Model Features: {}'.format(self.model_features_list))
 
     self.tmp_data_dir = tmp_data_dir
     if os.path.exists(self.tmp_data_dir) is False:
@@ -57,33 +58,6 @@ class FdDataPrep(object):
 
     return new_training_dfile
 
-  def convert_select_columns_to_numericals(self):
-    train_df = pd.read_csv(self.training_dfile)
-
-    # Get non numerical column idx
-    string_index = []
-    for n, i in enumerate(train_df.values[0, :]):
-      if train_df.columns[n] not in self.model_features_list:
-        pass
-      elif isinstance(i, float) or isinstance(i, int):
-        pass
-      else:
-        string_index.append(n)
-
-    key_dict = {}
-    array_df = np.array(train_df.values[1:, :])
-    for index in tqdm(range(array_df.shape[1])):
-      if train_df.columns[index] not in self.model_features_list:
-        pass
-      elif index in string_index:
-        li = []
-        for val in train_df.values[:, index]:
-          if val not in li:
-            if isinstance(val, str):
-              li.append(val)
-        key_dict[train_df.keys()[index]] = sorted(li)
-    return key_dict
-    
   def create_vocab_list_for_string_columns(self):
     train_df = pd.read_csv(self.training_dfile, \
       skip_blank_lines=True, \
@@ -125,4 +99,4 @@ class FdDataPrep(object):
       features_df[i] = features_df[i].astype(str) 
     for i in self.model_features_num_cols:
       features_df[i] = features_df[i].astype(np.float64)
-    return features_df[features_df.columns[0:-1]], features_df['label']
+    return features_df[features_df.columns[1:-1]], features_df['label']

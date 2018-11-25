@@ -17,9 +17,9 @@ RESUME_TRAINING = False
 
 TRAIN_DATA_FILE = "../de/trn_data_out/closed_apr/da_select_filtered_with_label_closed_apr.csv"
 #TRAIN_DATA_FILE = "./da_select_filtered_with_label_closed_apr.csv"
-TRAIN_SIZE = 100000
-NUM_EPOCHS = 1000
-BATCH_SIZE = 32
+TRAIN_SIZE = 10000
+NUM_EPOCHS = 10
+BATCH_SIZE = 128
 NUM_EVAL = 1
 MODEL_NAME = "auto-encoder-02"
 model_dir = "trained_models/{}".format(MODEL_NAME)
@@ -39,7 +39,7 @@ print(TOTAL_STEPS)
 hparams = tf.contrib.training.HParams(
     num_epochs=NUM_EPOCHS,
     batch_size=BATCH_SIZE,
-    hidden_units=[100, 30, 3],
+    hidden_units=[3],
     learning_rate=0.001,
     l2_reg=0.0000,
     noise_level=0.0,
@@ -65,7 +65,6 @@ print("That is 1 evaluation step after each", NUM_EPOCHS / NUM_EVAL, " epochs")
 print("Save Checkpoint After", CHECKPOINT_STEPS, "steps")
 
 # Create train and eval specs
-import ipdb; ipdb.set_trace()
 train_x, train_y= fd_data_prep.read_training_data()
 
 train_spec = tf.estimator.TrainSpec(
