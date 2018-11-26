@@ -11,12 +11,12 @@ from tqdm import tqdm
 from utils import standard_scaler, maxmin_scaler
 
 class FdDataPrep(object):
-  def __init__(self, training_dfile, tmp_data_dir='./tmp_train_data_dir'):
+  def __init__(self, datafile, tmp_data_dir='./tmp_train_data_dir'):
     # We would retain all the columns from below list, last one being label.
     self.model_features_list = [
-      'locat',
+      # 'locat',
       # 'ticketnum',
-      'paycode',
+      # 'paycode',
       # 'make',
       # 'color',
       # 'plate',
@@ -34,12 +34,12 @@ class FdDataPrep(object):
       os.makedirs(self.tmp_data_dir)
     self.model_features_string_cols = []
     self.model_features_num_cols = []
-    self.training_dfile = self.filter_model_features(training_dfile)
+    self.datafile = self.filter_model_features(datafile)
 
-  def filter_model_features(self, training_dfile):
-    fname = 'model_features_' + os.path.basename(training_dfile)
+  def filter_model_features(self, datafile):
+    fname = 'model_features_' + os.path.basename(datafile)
     new_training_dfile = os.path.join(self.tmp_data_dir, fname)
-    train_df = pd.read_csv(training_dfile, \
+    train_df = pd.read_csv(datafile, \
       skip_blank_lines=True, \
       warn_bad_lines=True, error_bad_lines=False)
     new_train_df = None
@@ -59,7 +59,7 @@ class FdDataPrep(object):
     return new_training_dfile
 
   def create_vocab_list_for_string_columns(self):
-    train_df = pd.read_csv(self.training_dfile, \
+    train_df = pd.read_csv(self.datafile, \
       skip_blank_lines=True, \
       warn_bad_lines=True, error_bad_lines=False)
     string_keys = {}
@@ -94,9 +94,14 @@ class FdDataPrep(object):
     return feature_columns
 
   def read_training_data(self):
-    features_df = pd.read_csv(self.training_dfile).dropna(how="any")
+    features_df = pd.read_csv(self.datafile).dropna(how="any")
     for i in self.model_features_string_cols:
       features_df[i] = features_df[i].astype(str) 
     for i in self.model_features_num_cols:
       features_df[i] = features_df[i].astype(np.float64)
     return features_df[features_df.columns[1:-1]], features_df['label']
+
+  def read_predict_data(self, fname):
+    features_df = pd.read_csv(fname).dropna(how="any")
+    features_df = features_df.astype(np.int64)
+    return features_df[features_df.columns[1:]]
