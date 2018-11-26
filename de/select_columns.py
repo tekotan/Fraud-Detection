@@ -38,7 +38,7 @@ def select_columns(trans_csv_flist, features_fname, output_dir, output_fname):
           warn_bad_lines=False, error_bad_lines=False)
       df_list.append(df)
 
-    trans_df = pd.concat(df_list)
+    trans_df = pd.concat(df_list, sort=False)
 
 
     # to dump all the separate columns from the trans_df
