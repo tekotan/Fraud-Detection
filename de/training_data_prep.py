@@ -50,15 +50,19 @@ class LossPrevTrainingDataPrep(object):
       skip_blank_lines=True, \
       warn_bad_lines=True, error_bad_lines=False)
 
-    # add a column to store label
-    select_df['label'] = 0
+    def _add_label(row):
+      if row['ticketnum'] in fraud_transactions:
+        label = 1
+      else:
+        label = 0
+      return label
 
-    # Append it to ml_select_with_label_<>.csv file and dump
-    for ticketid in tqdm(fraud_transactions):
-      ticketid = int(ticketid[0])
-      select_df.loc[select_df['ticketnum'] == ticketid, 'label']=1
+    # add a column to store label
+    tqdm.pandas()
+    select_df['label'] = \
+        select_df.progress_apply(_add_label, axis=1)
   
-    # dump the file
+    # Dump the file ml_select_with_label_<>.csv file 
     fname = os.path.join(self.output_path, \
       'ml_select_with_label_' + \
       os.path.basename(self.redshift_trans_csv_dirname)) + \
@@ -66,11 +70,78 @@ class LossPrevTrainingDataPrep(object):
 
     select_df.to_csv(fname)
 
+  def feature_engineering(self, select_df):
+    """ function to manipulate features 
+    Args:
+      select_df (DataFrame): transaction data
+    Return:
+      DataFrame: additional columns based on feature engineering
+
+    1. Ignore redundant transactions
+      Focus on below columns only from table:
+      locat, dtout (format?), paycode (3,4,6,10), make , \
+      color , plate, ccdaccount , ccdexpdate , \
+      ratedescription (only pick transactions \
+      which are not 'default')
+
+    2. Perform feature engineering
+      i. If a card has been used for multiple vehicles, add to \
+          _cardmultuses column
+
+    """
+    # Ignore default transaction from ratedescription column
+    select_df = select_df[select_df['ratedescription'] != 'Default']
+    select_df = select_df[select_df['ratedescription'] != 'default']
+
+    # Ignore transactions which are not credit card based, and only 
+    # have paycode of 3, 4, 6, 10
+    paycode = select_df['paycode']
+    paycode_logical_or = np.logical_or(np.logical_or(np.logical_or( \
+      paycode == 3, paycode == 4), \
+      paycode == 6), paycode == 10)
+    select_df = select_df[paycode_logical_or]
+
+    # Ignore nan 
+    select_df = select_df.dropna(subset=['ccdaccount'])
+
+    # select_df.to_csv(os.path.join(self.output_path, \
+        # 'da_select_filtered.csv'))
+
+    ## Perform feature engineering
+
+    # Same card multiple use 
+    same_card_mult_usage_dict = {}
+
+    def _build_same_card_multiple_use_map(row):
+      """ Same credit card (paycode, ccdaccount, ccdexpdate) \
+        used at the same facility (locat) in the \
+        same month (dtout) for a different vehicle \
+        (make, color, plate)
+      """
+      same_card_tuple = \
+          (row['locat'], row['paycode'], row['ccdaccount'], row['ccdexpdate'])
+      if same_card_tuple \
+          not in same_card_mult_usage_dict.keys():
+        same_card_mult_usage_dict[same_card_tuple] = 1
+      else:
+        same_card_mult_usage_dict[same_card_tuple] += 1
+      
+      cardmultuses = same_card_mult_usage_dict[same_card_tuple]
+      return cardmultuses
+
+    print('\t\t building same card multiple usage map...')
+    select_df['_cardmultuses'] = \
+        select_df.apply(_build_same_card_multiple_use_map, axis=1)
+
+    return select_df
+
   def generate_fraud_training_data(self):
     """ Function generaes fraud data based on rules
     Args:
+      None
 
     Returns:
+      None
 
     Description:
       What is a fraud:
@@ -95,64 +166,23 @@ class LossPrevTrainingDataPrep(object):
       skip_blank_lines=True, \
       warn_bad_lines=True, error_bad_lines=False)
 
-    # add a column to store label
-    select_df['label'] = 0
+    # Perform feature engineering
+    print('\tperforming feature engineering...')
+    select_df = self.feature_engineering(select_df)
 
-    # Ignore default transaction from ratedescription column
-    select_df = select_df[select_df['ratedescription'] != 'Default']
-    select_df = select_df[select_df['ratedescription'] != 'default']
+    # Add fraud label column (if same card was used for multiple vehicles,
+    # it's a fraud) - 0 or 1 for no or yes fraud
+    fraud_transactions = []
+    def _apply_fraud_label(row):
+      label = 0
+      if row['_cardmultuses'] >= 2:
+        # fraud transaction
+        label = 1
+        fraud_transactions.append(row['ticketnum'])
+      return label
 
-    # Ignore transactions which are not credit card based, and only 
-    # have paycode of 3, 4, 6, 10
-    paycode = select_df['paycode']
-    paycode_logical_or = np.logical_or(np.logical_or(np.logical_or( \
-      paycode == 3, paycode == 4), \
-      paycode == 6), paycode == 10)
-    select_df = select_df[paycode_logical_or]
-
-    # Ignore nan 
-    select_df = select_df.dropna(subset=['ccdaccount'])
-
-    # select_df.to_csv(os.path.join(self.output_path, \
-        # 'da_select_filtered.csv'))
-
-    ## Apply rules to generate label
-
-    location_dict = {}
-
-    def build_fraud_transaction_map(row):
-      """ Same credit card (paycode, ccdaccount, ccdexpdate) \
-        used at the same facility (locat) in the \
-        same month (dtout) for a different vehicle \
-        (make, color, plate)
-      """
-      ticketid_tup = (row['ticketnum'])
-      car_tup = (ticketid_tup, \
-        (row['make'], row['color'], row['plate']))
-      cc_tup = (row['ccdaccount'], row['ccdexpdate'])
-      loc_tup = (row['locat']) # can include other stuff
-      if loc_tup not in location_dict.keys():
-        location_dict[loc_tup]={}
-      if cc_tup not in location_dict[loc_tup].keys():
-        location_dict[loc_tup][cc_tup] = []
-      location_dict[loc_tup][cc_tup].append(car_tup)
-
-    select_df.apply(build_fraud_transaction_map, axis=1)
-
-    fraud_transactions=[]
-    ## Apply rules to generate label
-    for loc in location_dict.keys():
-      for cc in location_dict[loc].keys():
-        car_list = location_dict[loc][cc]
-        if len(car_list) > 1:
-          # fraud transaction
-          for car in car_list:
-            fraud_transactions.append(car)
-
-    # Append it to da_select_with_label_<>.csv file and dump
-    for ticketid in tqdm(fraud_transactions):
-      ticketid = int(ticketid[0])
-      select_df.loc[select_df['ticketnum'] == ticketid, 'label']=1
+    print('\tapplying fraud labels...')
+    select_df['label'] = select_df.apply(_apply_fraud_label, axis=1)
     
     # dump the file
     fname = os.path.join(self.output_path, \
@@ -171,13 +201,13 @@ class LossPrevTrainingDataPrep(object):
       None
 
     Description:
-      Step-0: Read original redshift dump csv file with all \
-        transactions
+      Step-0: Read original redshift dump csv files with all \
+        transactions from the folder
       Step-1: Dump file 'da_select_<>.csv' to have all \
         feature columns for data augmentation
-      Step-2: Apply rules to identify if a transaction is fraud \
-        and create labels and dump another file \
-        'da_select_filtered_with_label_<>.csv'
+      Step-2: Perform feature engineering and using these curated features \
+          identify if a transaction is fraud, create labels and dump \
+          another file 'da_select_filtered_with_label_<>.csv'
       Step-3: Dump file 'ml_select_<>.csv' to have all \
         feature columns required for ml
       Step-4: Append labels from Step-3 to ml_select_with_label_<>.csv
