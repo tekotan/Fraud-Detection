@@ -21,7 +21,8 @@ TRAIN_SIZE = 10000
 NUM_EPOCHS = 10
 BATCH_SIZE = 128
 NUM_EVAL = 1
-MODEL_NAME = "auto-encoder-02"
+#MODEL_NAME = "auto-encoder-02"
+MODEL_NAME = "dnn_classifier"
 model_dir = "trained_models/{}".format(MODEL_NAME)
 #################################################
 
@@ -78,7 +79,8 @@ train_spec = tf.estimator.TrainSpec(
 
 eval_spec = tf.estimator.EvalSpec(
     input_fn=tf.estimator.inputs.pandas_input_fn(
-        train_x, num_epochs=1, batch_size=hparams.batch_size, shuffle=False
+        train_x, train_y, num_epochs=1, batch_size=hparams.batch_size,\
+            shuffle=False
     ),
 )
 
@@ -104,8 +106,8 @@ linear_classifier = fd_model.create_linear_classifier(run_config, hparams)
 
 # Train model
 tf.estimator.train_and_evaluate(
-    estimator=ae_estimator, 
-    # estimator=linear_classifier, 
+    # estimator=ae_estimator, 
+    estimator=linear_classifier, 
     train_spec=train_spec, 
     eval_spec=eval_spec
     )

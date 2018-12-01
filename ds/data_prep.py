@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+from pandas.api.types import is_string_dtype
+from pandas.api.types import is_numeric_dtype
 import numpy as np
 import shutil
 import multiprocessing
@@ -37,6 +39,18 @@ class FdDataPrep(object):
     self.datafile = self.filter_model_features(datafile)
 
   def filter_model_features(self, datafile):
+    """ From input data file, filter features
+        from model_features_list
+
+      Args:
+        datafile (str): input data file
+      Return:
+        str: file name with new training data
+      Description:
+        This function first filters input data file to new training data file
+        Secondly it finds numerical cols and string cols and populate for 
+          later use
+    """
     fname = 'model_features_' + os.path.basename(datafile)
     new_training_dfile = os.path.join(self.tmp_data_dir, fname)
     train_df = pd.read_csv(datafile, \
@@ -48,13 +62,11 @@ class FdDataPrep(object):
     new_train_df.to_csv(new_training_dfile)
 
     # Get non numerical column idx (strings)
-    for idx, value in enumerate(new_train_df.values[0, :]):
-      if isinstance(value, float) or isinstance(value, int):
-        self.model_features_num_cols.\
-            append(new_train_df.columns[idx])
-      else:
-        self.model_features_string_cols.\
-            append(new_train_df.columns[idx])
+    for col in new_train_df.columns:
+      if is_numeric_dtype(new_train_df[col]):
+        self.model_features_num_cols.append(col)
+      elif is_string_dtype(new_train_df[col]):
+        self.model_features_string_cols.append(col)
 
     return new_training_dfile
 
