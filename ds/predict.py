@@ -8,7 +8,8 @@ from utils import standard_scaler, maxmin_scaler
 from data_prep import FdDataPrep
 from fd_model import FdModel
 
-MODEL_NAME = 'auto-encoder-02'
+#MODEL_NAME = 'auto-encoder-02'
+MODEL_NAME = "dnn_classifier"
 model_dir = 'trained_models/{}'.format(MODEL_NAME)
 PREDICT_FILE = '../data/test_prediction.csv'
 
@@ -25,7 +26,7 @@ hparams  = tf.contrib.training.HParams(
 fd_data_prep = FdDataPrep(PREDICT_FILE)
 fd_model = FdModel(fd_data_prep)
 
-predict_x = fd_data_prep.read_predict_data('./tmp_train_data_dir/predict.csv')
+predict_x = fd_data_prep.read_predict_data(PREDICT_FILE)
 
 input_fn=tf.estimator.inputs.pandas_input_fn(
   x=predict_x, num_epochs=1, \
@@ -41,7 +42,7 @@ run_config = tf.estimator.RunConfig(
 estimator = fd_model.create_linear_classifier(run_config, hparams)
 
 predictions = estimator.predict(input_fn=input_fn)
-print(next(predictions))
+print('**** {}'.format(next(predictions)))
 
 """
 from mpl_toolkits.mplot3d import Axes3D
