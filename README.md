@@ -25,6 +25,3 @@ usage: training_data_prep.py [-h] -i REDSHIFT_TRANS_CSV_DIRNAME \
 ```bash
 python3 training_data_prep.py -i /home/ajay/data/2018/closed_apr -ml_f fheaders/ml_features_headers.txt -da_f fheaders/training_data_aug_headers.txt -o ./trn_data_out
 ```
-
-## data/
-Some sample data
