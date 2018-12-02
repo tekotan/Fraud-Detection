@@ -1,8 +1,17 @@
-# Code repository for parking garage loss prevention 
+# Code repository for parking garage loss prevention
 
 ## ds/
 All code related to model
-
+### Config file
+Contains all hyper parameter for training
+### To train model
+```bash
+python full_train.py
+```
+### To predict and test model
+```bash
+python full_predict.py -m MODEL_TYPE -f PREDICT_FILE
+```
 ## de/
 ### All code related to data engineering (mining)
 - Use training_data_prep.py go generate fraud data
