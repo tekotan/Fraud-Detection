@@ -7,17 +7,17 @@ auto_encoder_hparams = tf.contrib.training.HParams(
     learning_rate=0.001,
     l2_reg=0.0000,
     noise_level=0.0,
-    max_steps=10000,
+    max_steps=1000,
     dropout_rate=0.00,
 )
 classifier_hparams = tf.contrib.training.HParams(
     num_epochs=10,
     batch_size=128,
-    hidden_units=[30, 3],
+    hidden_units=[2],
     learning_rate=0.001,
     l2_reg=0.0000,
     noise_level=0.0,
-    max_steps=10000,
+    max_steps=1000,
     dropout_rate=0.00,
 )
 model_features_list = [
@@ -39,4 +39,5 @@ AUTO_ENCODER_CHECKPOINT_STEPS = 200
 RESUME_TRAINING = False
 
 CLASSIFIER_MODEL_NAME = "complete_encoder_dnn_classifier"
+ONLY_CLASSIFIER_MODEL_NAME = "dnn_classifier"
 CLASSIFIER_CHECKPOINT_STEPS = 200
